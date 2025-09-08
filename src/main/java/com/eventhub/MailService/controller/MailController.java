@@ -1,5 +1,6 @@
 package com.eventhub.MailService.controller;
 
+import com.eventhub.MailService.dto.NotificationDTO;
 import com.eventhub.MailService.model.Mail;
 import com.eventhub.MailService.service.MailService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,5 +21,10 @@ public class MailController {
     @PostMapping("/send")
     public void sendMessage(@RequestBody Mail mail) {
         mailService.sendMessage(mail);
+    }
+
+    @PostMapping("/reminder")
+    public void reminder(@RequestBody NotificationDTO notificationDTO) {
+        mailService.reminder(notificationDTO);
     }
 }
