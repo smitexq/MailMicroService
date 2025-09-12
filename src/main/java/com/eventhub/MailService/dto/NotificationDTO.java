@@ -8,6 +8,7 @@ public class NotificationDTO {
     private String event_name;
     private LocalDateTime time;
 
+
     public String getUsername() {
         return username;
     }
