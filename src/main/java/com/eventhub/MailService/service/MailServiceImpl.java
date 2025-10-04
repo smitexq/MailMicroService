@@ -4,18 +4,20 @@ import com.eventhub.MailService.dao.InMemoryReminder;
 import com.eventhub.MailService.dao.RemoveDTO;
 import com.eventhub.MailService.dto.NotificationDTO;
 import com.eventhub.MailService.model.Mail;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class MailServiceImpl implements MailService {
@@ -23,7 +25,7 @@ public class MailServiceImpl implements MailService {
     @Value("${spring.mail.username}")
     private String sender;
 
-    List<UUID> toRemove = new ArrayList<>(); //список на отправку письма и удаление из мапы
+    private final List<UUID> toRemove = new ArrayList<>(); //список на отправку письма и удаление из мапы
 
     private final JavaMailSender mailSender;
     private final InMemoryReminder inMemoryReminder;
@@ -45,6 +47,38 @@ public class MailServiceImpl implements MailService {
 
         mailSender.send(smsg);
     }
+
+    @Override
+    public void sendHTMLEmail(Mail mail) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+
+        message.setFrom(new InternetAddress(sender));
+        for (String recipient: mail.getRecipients()){
+            message.addRecipients(MimeMessage.RecipientType.TO, recipient);
+        }
+        message.setSubject(mail.getSubject());
+        message.setContent(mail.getBody(), "text/html; charset=utf-8");
+
+        mailSender.send(message);
+    }
+
+    @Override
+    public void sendEmailWithAttachment(Mail mail) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+        helper.setFrom(sender);
+        helper.setTo(mail.getRecipients());
+        helper.setSubject("Testing Mail API With Attachment " + mail.getSubject());
+        helper.setText("Please find the attached document below " + mail.getBody());
+
+        ClassPathResource pathResource = new ClassPathResource("test.png");
+        helper.addAttachment(Objects.requireNonNull(pathResource.getFilename()), pathResource);
+
+        mailSender.send(message);
+    }
+
+
 
     @Override
     public void reminder(NotificationDTO notificationDTO) {
