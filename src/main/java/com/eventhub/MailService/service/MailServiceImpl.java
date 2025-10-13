@@ -4,11 +4,14 @@ import com.eventhub.MailService.dao.InMemoryReminder;
 import com.eventhub.MailService.dao.RemoveDTO;
 import com.eventhub.MailService.dto.NotificationDTO;
 import com.eventhub.MailService.model.Mail;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -29,10 +32,12 @@ public class MailServiceImpl implements MailService {
 
     private final JavaMailSender mailSender;
     private final InMemoryReminder inMemoryReminder;
+    private final ObjectMapper mapper;
 
-    public MailServiceImpl(JavaMailSender mailSender, InMemoryReminder inMemoryReminder) {
+    public MailServiceImpl(JavaMailSender mailSender, InMemoryReminder inMemoryReminder, ObjectMapper mapper) {
         this.mailSender = mailSender;
         this.inMemoryReminder = inMemoryReminder;
+        this.mapper = mapper;
     }
 
     @Override
@@ -79,10 +84,18 @@ public class MailServiceImpl implements MailService {
     }
 
 
-
+    @KafkaListener(
+            topics = "notification-topic",
+            groupId = "reminder"
+    )
     @Override
-    public void reminder(NotificationDTO notificationDTO) {
-        inMemoryReminder.addRecipient(notificationDTO);
+    public void reminder(String message) {
+        try {
+            NotificationDTO notificationDTO = mapper.readValue(message, NotificationDTO.class);
+            inMemoryReminder.addRecipient(notificationDTO);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -25,11 +25,6 @@ public class MailController {
         mailService.sendEmailWithAttachment(mail);
     }
 
-    @PostMapping("/reminder")
-    public void reminder(@RequestBody NotificationDTO notificationDTO) {
-        mailService.reminder(notificationDTO);
-    }
-
     @PostMapping("/remove_notification")
     public void removeNotification(@RequestBody RemoveDTO removeDTO) {
         mailService.removeNotification(removeDTO);
